@@ -1,0 +1,9 @@
+{
+  "name": "data-middle-platform-spec",
+  "version": "0.0.0",
+  "description": "Data-Middle-Platform-Spec",
+  "main": "server.js",
+  "author": {
+    "name": ""
+  }
+}

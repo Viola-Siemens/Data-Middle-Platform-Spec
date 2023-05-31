@@ -1,0 +1,197 @@
+body {
+    background-image: url(../imgs/background.png);
+    background-attachment: fixed;
+    background-size: 100%;
+}
+
+div.nav {
+    float: left;
+    background-color: goldenrod;
+}
+
+div.nav > p {
+    font-weight: bold;
+    font-size: 32px;
+    color: white;
+    margin-left: 50px;
+    margin-right: 50px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+div.nav.home {
+    background-color: gold;
+}
+
+div.col-2 {
+    float: left;
+    width: 50%;
+    height: 40%;
+}
+
+div.col-4 {
+    float: left;
+    width: 25%;
+    height: 30%;
+}
+
+img.img-responsive {
+    width: 100%;
+    border-radius: 2px;
+    mix-blend-mode: multiply;
+}
+
+.center {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.btn-down {
+    position: absolute;
+    right: 20px;
+    font-size: 64px;
+}
+
+div#godown {
+    position: relative;
+    left: 0px;
+    right: 0px;
+    margin: auto;
+    z-index: 5;
+    height: 50px;
+    cursor: pointer;
+    user-select: none;
+    vertical-align: baseline;
+    font-size: 30px;
+    line-height: 55px;
+}
+
+.dense {
+    margin: 0px 0px 0px 0px;
+}
+
+h1 {
+    font-size: 64px;
+    line-height: 84px;
+}
+
+h1.heading {
+    color: aqua;
+    letter-spacing: 0;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+h2 {
+    font-size: 50px;
+    line-height: 80px;
+}
+
+h2.heading {
+    letter-spacing: 0;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h3 {
+    font-size: 40px;
+    line-height: 64px;
+}
+
+h3.heading {
+    letter-spacing: 0;
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+p {
+    font-size: 24px;
+    line-height: 36px;
+}
+
+p.heading {
+    color: aqua;
+    letter-spacing: 0;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+a.btn-alt {
+    height: 36px;
+    line-height: 36px;
+    padding-right: 30px;
+    padding-left: 30px;
+    position: relative;
+    margin-right: 10px;
+    margin-left: 10px;
+    margin-bottom: 35px;
+    background-color: #3367D6;
+    text-decoration: none !important;
+    color: white;
+    transition: all .4s ease;
+    font-size: 24px;
+}
+
+input.input-box {
+    font-size: 24px;
+    height: 30px;
+}
+
+div.form-div {
+    text-align: center;
+}
+
+table td {
+    border-style: solid;
+    border-width: 1px;
+}
+
+thead > tr > td {
+    text-align: center;
+    font-weight: bold;
+    background-color: #dedede;
+}
+
+tbody > tr > td {
+    background-color: #ffffff;
+}
+
+.floating {
+    background-color: white;
+    opacity: 0.9;
+    position: fixed;
+    line-height: 500px;
+    text-align: center;
+    left: 15%;
+    right: 15%;
+    top: 15%;
+    bottom: 15%;
+    z-index: 100;
+}
+
+form > p > select {
+    width: 150px;
+    font-size: 24px;
+}
+
+form > p > input[type="search"] {
+    width: 600px;
+    font-size: 24px;
+}
+
+form > p > input[type="number"] {
+    width: 442px;
+    font-size: 24px;
+}
+
+form > p > input[type="submit"] {
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 24px;
+}
+
+form > p > button {
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 24px;
+}

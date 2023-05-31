@@ -1,0 +1,3 @@
+C:\Projects\Data-Middle-Platform-Spec\obj\Debug\Data-Middle-Platform-Spec.njsproj.AssemblyReference.cache
+C:\Projects\Data-Middle-Platform-Spec\obj\Debug\Data-Middle-Platform-Spec.njsproj.CoreCompileInputs.cache
+C:\Projects\Data-Middle-Platform-Spec\bin\Microsoft.NodejsTools.WebRole.dll

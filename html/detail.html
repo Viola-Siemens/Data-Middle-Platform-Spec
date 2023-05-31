@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+</head>
+<body>
+    <div id="flexslider-nav" class="fullpage-wrap small">
+        <div class="text center" style="background-image: url(imgs/slider.jpg);">
+            <h1 class="heading center white margin-bottom-small flex-animation">Spec 数据中台</h1>
+            <p class="heading white center margin-bottom flex-animation">全面的系统数据采集，权威的数据分析！</p>
+            <div class="padding-onlytop-md flex-animation">
+                <a href="/" class="btn-alt small shadow">首页</a>
+            </div>
+        </div>
+        <div class="gradient dark"></div>
+        <div id="godown">
+            <a href="#home-wrap" class="btn-down">
+                <i class="material-icons">keyboard_arrow_down</i>
+            </a>
+        </div>
+    </div>
+    <div id="table-div" style="margin-left: auto; margin-right: auto; width: 80%">
+        <h2 class="dense center" id="caption"></h2>
+        <table id="hardware" style="width: 50%; float: left">
+            <tbody>
+                <tr>
+                    <th colspan="2">硬件配置</th>
+                </tr>
+                <tr>
+                    <td>CPU名称</td>
+                    <td id="cpu_name"></td>
+                </tr>
+                <tr>
+                    <td>Max MHz</td>
+                    <td id="max_mhz"></td>
+                </tr>
+                <tr>
+                    <td>默认功率</td>
+                    <td id="nominal"></td>
+                </tr>
+                <tr>
+                    <td>活跃CPU</td>
+                    <td id="enabled"></td>
+                </tr>
+                <tr>
+                    <td>可预定CPU</td>
+                    <td id="orderable"></td>
+                </tr>
+                <tr>
+                    <td>L1缓存</td>
+                    <td id="cache_l1"></td>
+                </tr>
+                <tr>
+                    <td>L2缓存</td>
+                    <td id="cache_l2"></td>
+                </tr>
+                <tr>
+                    <td>L3缓存</td>
+                    <td id="cache_l3"></td>
+                </tr>
+                <tr>
+                    <td>内存</td>
+                    <td id="memory"></td>
+                </tr>
+                <tr>
+                    <td>硬盘</td>
+                    <td id="storage"></td>
+                </tr>
+            </tbody>
+        </table>
+        <table id="software" style="width: 50%; float: left">
+            <tbody>
+                <tr>
+                    <th colspan="2">软件配置</th>
+                </tr>
+                <tr>
+                    <td>操作系统</td>
+                    <td id="os"></td>
+                </tr>
+                <tr>
+                    <td>编译器</td>
+                    <td id="compiler"></td>
+                </tr>
+                <tr>
+                    <td>并行</td>
+                    <td id="parallel"></td>
+                </tr>
+                <tr>
+                    <td>驱动</td>
+                    <td id="firmware"></td>
+                </tr>
+                <tr>
+                    <td>文件系统</td>
+                    <td id="filesystem"></td>
+                </tr>
+                <tr>
+                    <td>系统类型</td>
+                    <td id="state"></td>
+                </tr>
+                <tr>
+                    <td>基础基准的指针大小</td>
+                    <td id="base_pointer"></td>
+                </tr>
+                <tr>
+                    <td>峰值基准的指针大小</td>
+                    <td id="peak_pointer"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
