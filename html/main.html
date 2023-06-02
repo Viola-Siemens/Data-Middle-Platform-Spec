@@ -241,10 +241,27 @@
 					return;
 				}
 				let raw_data = [];
+				let min = 4096 * 12;
+				let max = 0;
+				let has_value = {};
 				for (let i in data["data"]) {
 					let d = new Date(data["data"][i].name);
 					let m = d.getMonth() + 1;
+					let tmp_v = d.getFullYear() * 12 + m - 1;
+					if (tmp_v < min) {
+						min = tmp_v;
+					}
+					if (tmp_v > max) {
+						max = tmp_v;
+					}
+					has_value[tmp_v] = true;
 					raw_data.push([d.getFullYear() + '/' + (m < 10 ? "0" + m : m), data["data"][i].value]);
+				}
+				for (let i = min + 1; i < max; ++i) {
+					if (!has_value[i]) {
+						let m = i % 12 + 1;
+						raw_data.push([Math.floor(i / 12) + '/' + (m < 10 ? "0" + m : m), 0]);
+					}
 				}
 				raw_data.sort((a, b) => {
 					if (a[0] == b[0]) return 0;
@@ -268,6 +285,15 @@
 					yAxis: {
 						name: 'Count'
 					},
+					dataZoom: [
+						{
+							type: 'inside'
+						},
+						{
+							type: 'slider',
+							height: 20
+						}
+					],
 					series: [
 						{
 							name: '当月测试数量',
@@ -309,14 +335,14 @@
 							transform: {
 								type: 'ecStat:histogram',
 								config: {
-									dimensions: [1]
+									dimensions: [2]
 								}
 							}
 						}
 					],
 					tooltip: {},
 					xAxis: {
-						name: "Max_MHz"
+						name: "Score"
 					},
 					yAxis: {
 						name: "频数"

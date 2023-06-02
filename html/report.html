@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta charset="utf-8" />
+	<title>数据报表</title>
+	<link rel="stylesheet" href="css/style.css" />
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+	<script type="text/javascript" src="js/echarts.min.js"></script>
+	<script type="text/javascript" src="js/echarts-wordcloud.js"></script>
+	<script type="text/javascript" src="js/ecSimpleTransform.min.js"></script>
+	<script type="text/javascript" src="js/ecStat.min.js"></script>
+	<script type="text/javascript" src="js/jquery-3.7.0.min.js"></script>
+	<script type="text/javascript" src="js/report-charts.js"></script>
+	<script type="text/javascript">
+		function selectNext() {
+			let autohide = document.getElementsByClassName("autohide-for-type");
+			let option = document.getElementById("chart-type");
+			let type = option.options[option.selectedIndex].value;
+
+			for (let e of autohide) {
+				e.setAttribute("style", "display: none");
+			}
+			let shows = document.getElementsByClassName("show-" + type);
+			for (let e of shows) {
+				e.setAttribute("style", null);
+			}
+		}
+
+		function showAddBox() {
+			document.getElementById("float-add-box").hidden = false;
+		}
+
+		function hideAddBox() {
+			document.getElementById("float-add-box").hidden = true;
+		}
+
+		function addChartDiv() {
+			let option = document.getElementById("chart-type");
+			let type = option.options[option.selectedIndex].value;
+			switch (type) {
+				case "pie":
+					addPieChart();
+					break;
+				case "box":
+					addBoxChart();
+					break;
+				case "line":
+					addLineChart();
+					break;
+				case "hist":
+					addHistChart();
+					break;
+				case "cloud":
+					addCloudChart();
+					break;
+				default:
+					console.error("Unknown type: " + type);
+					break;
+			}
+			hideAddBox();
+		}
+	</script>
+</head>
+<body>
+	<div id="flexslider-nav" class="fullpage-wrap small">
+		<div class="text center" style="background-image: url(imgs/slider.jpg);">
+			<h1 class="heading center white margin-bottom-small flex-animation">Spec 数据中台</h1>
+			<p class="heading white center margin-bottom flex-animation">数据报表</p>
+			<div class="padding-onlytop-md flex-animation">
+				<a href="/" class="btn-alt small shadow">首页</a>
+			</div>
+		</div>
+		<div class="gradient dark"></div>
+		<div id="godown">
+			<a href="#home-wrap" class="btn-down">
+				<i class="material-icons">keyboard_arrow_down</i>
+			</a>
+		</div>
+	</div>
+	<div id="form-btns" class="text center">
+		<button onclick="showAddBox()">添加图表</button>
+		<input id="delete-index" type="number" /><button onclick='removeChart(parseInt(document.getElementById("delete-index").value) - 1)'>删除图表</button>
+	</div>
+	<div id="main">
+	</div>
+	<div id="float-add-box" class="floating" hidden="hidden">
+		<form>
+			<p>
+				图表标题：　　　<input type="search" id="chart-title" name="chart-title" />
+			</p>
+			<p>
+				图表类型：　　　<select id="chart-type" class="wide" name="chart_type" onchange="selectNext()">
+					<option value="pie">饼图</option>
+					<option value="box">箱线图</option>
+					<option value="line" selected="selected">折线图</option>
+					<option value="hist">直方图</option>
+					<option value="cloud">词云</option>
+				</select>
+			</p>
+			<p class="autohide-for-type show-pie">
+				可枚举域：　　　<select id="count_field" name="count_field" class="wide">
+					<option value="sponsor" selected="selected">贡献者</option>
+					<option value="tester">测试者</option>
+					<option value="date">日期</option>
+					<option value="filesystem">文件系统</option>
+					<option value="compiler">编译器</option>
+					<option value="parallel">并行</option>
+					<option value="base_pointer">基础基准指针</option>
+					<option value="peak_pointer">峰值基准指针</option>
+					<option value="state">系统类型</option>
+				</select>
+			</p>
+			<p class="autohide-for-type show-pie">
+				阈值：　　　　　<input id="other_threshold" name="other_threshold" type="number" value="10" />
+			</p>
+			<p class="autohide-for-type show-box show-hist">
+				数值可衡量域：　<select id="raw_field" name="raw_field" class="wide">
+					<option value="max_mhz" selected="selected">Max MHz</option>
+					<option value="nominal">默认功率</option>
+					<option value="metric_score">跑分</option>
+				</select>
+			</p>
+			<p class="autohide-for-type show-line">
+				时序域：　　　　<select id="time_field" name="time_field" class="wide">
+					<option value="month" selected="selected">日期（月）</option>
+					<option value="year" selected="selected">日期（年）</option>
+				</select>
+			</p>
+			<p class="autohide-for-type show-cloud">
+				文本域：<br />
+				<input type="checkbox" id="name-cb" name="name" value="name" checked="checked" />系统名称<br />
+				<input type="checkbox" id="sponsor-cb" name="sponsor" value="sponsor" />贡献者<br />
+				<input type="checkbox" id="tester-cb" name="tester" value="tester" />测试者<br />
+				<input type="checkbox" id="cpu_name-cb" name="cpu_name" value="cpu_name" />CPU名称<br />
+				<input type="checkbox" id="os-cb" name="os" value="os" />操作系统
+			</p>
+			<p style="margin-bottom: auto">
+				<button onclick="addChartDiv()" type="button">添加</button>　　　　　　　　<button onclick="hideAddBox()" type="button">关闭</button>
+			</p>
+		</form>
+	</div>
+
+	<script type="text/javascript">
+		selectNext();
+		setMainDiv(document.getElementById("main"));
+	</script>
+</body>
+</html>

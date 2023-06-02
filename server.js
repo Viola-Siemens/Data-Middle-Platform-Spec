@@ -10,6 +10,7 @@ const multer = require("multer");
 const cheerio = require("cheerio");
 const fs = require("fs");
 const rateLimit = require("express-rate-limit");
+const numeric = require("numeric");
 const crypto = require("crypto");
 const database = require("./database.js");
 
@@ -52,6 +53,7 @@ let main = function (req, res) {
 		$('a[href="/login"]').attr("hidden", "hidden");
 		$('a[href="/signup"]').attr("hidden", "hidden");
 		$('a[href="/logout"]').removeAttr("hidden");
+		$('a[href="/report"]').removeAttr("hidden");
 	}
 
 	$('span#welcome-permission').text(permission);
@@ -201,6 +203,17 @@ server.get('/content', function (req, res) {
 		return;
 	}
 
+	for (let m of ["name", "sponsor", "tester", "date", "cpu_name", "max_mhz", "nominal", "os", "filesystem"]) {
+		if (req.query[m]) {
+			$(`input[name="${m}"]`).attr("value", req.query[m]);
+		}
+	}
+	for (let m of ["cond_max_mhz", "cond_nominal"]) {
+		if (req.query[m]) {
+			$(`select[name="${m}"]`).children('option[value="eq"]').removeAttr("selected");
+			$(`select[name="${m}"]`).children(`option[value="${req.query[m]}"]`).attr("selected", "selected");
+		}
+	}
 
 	let query_obj = parse(req.query);
 	let page = req.query.page || 1;
@@ -225,12 +238,12 @@ server.get('/content', function (req, res) {
 		for (let i in result) {
 			result_html += `
 <tr>
-    <td><a href="/detail?id=${result[i].id}">${result[i].name}</a></td>
+	<td><a href="/detail?id=${result[i].id}">${result[i].name}</a></td>
 	<td>${result[i].sponsor}</td>
-    <td>${result[i].tester}</td>
-    <td>${result[i].date}</td>
+	<td>${result[i].tester}</td>
+	<td>${result[i].date}</td>
 </tr>
-`
+`;
 		}
 		$("tbody#table-body").append(result_html);
 		let cnt_sql = "SELECT COUNT(*) AS cnt FROM systems" + query_obj.sql + ";";
@@ -282,10 +295,27 @@ server.get('/detail', function (req, res) {
 				res.end(`<script>alert("非法的请求！");window.location.replace("/");</script>`);
 				return;
 			}
+			$('h2#caption').text(result[0].name);
+			$('title').text(result[0].name);
 			for (let m of ["cpu_name", "max_mhz", "nominal", "enabled", "orderable", "cache_l1", "cache_l2", "cache_l3", "memory", "storage", "os", "compiler", "parallel", "firmware", "filesystem", "state", "base_pointer", "peak_pointer"]) {
 				$(`td#${m}`).text(result[0][m]);
 			}
-			res.end($.html());
+			database.query('SELECT * FROM user_actions WHERE user_id = $1 AND target = $2;', [uid, sid], function(qerr1, result1) {
+				if (qerr1) {
+					console.error(qerr1);
+					res.end(`<script>alert("数据库查询失败，请稍后重试！");window.location.replace("/");</script>`);
+					return;
+				}
+				if (result1 && result1.length > 0) {
+					$('div#like-btns').attr("hidden", "hidden");
+					$('button#like-btn').attr("onclick", `alert("您已经反馈！")`);
+					$('button#dislike-btn').attr("onclick", `alert("您已经反馈！")`);
+				} else {
+					$('button#like-btn').attr("onclick", `like(${sid})`);
+					$('button#dislike-btn').attr("onclick", `dislike(${sid})`);
+				}
+				res.end($.html());
+			});
 		});
 	} else {
 		$('h2#caption').text('登录后查看更多');
@@ -508,7 +538,25 @@ function checkPermissionOrElse(uid, token, level, callback, fallback) {
 	}
 }
 
-server.post("/query", function (req, res) {
+server.get("/report", function(req, res) {
+	res.writeHead(200, { 'Content-type': 'text/html; charset=utf-8' });
+	let uid = req.cookies.id;
+	let token = req.cookies.token;
+
+	checkPermissionOrElse(uid, token, 2, () => {
+		res.end(fs.readFileSync("html/report.html"));
+	}, () => {
+		res.end(`<script>alert("您没有权限访问！");window.location.replace("/");</script>`);
+	});
+});
+
+const queryLimiter = rateLimit({
+	windowMs: 1000,
+	max: 1,
+	message: "操作频繁，请稍后重试！"
+});
+
+server.post("/query", queryLimiter, function (req, res) {
 	let uid = req.cookies.id;
 	let token = req.cookies.token;
 
@@ -517,6 +565,14 @@ server.post("/query", function (req, res) {
 			case "count":
 				switch (req.body.field) {
 					case "sponsor":
+					case "tester":
+					case "date":
+					case "filesystem":
+					case "compiler":
+					case "parallel":
+					case "base_pointer":
+					case "peak_pointer":
+					case "state":
 						let other_threshold = req.body.other_threshold || 0;
 						if (other_threshold instanceof String) {
 							try {
@@ -525,7 +581,7 @@ server.post("/query", function (req, res) {
 								other_threshold = 0;
 							}
 						}
-						database.query("SELECT * FROM counts WHERE field = $1;", ["systems.sponsor"], function (qerr, result) {
+						database.query("SELECT * FROM counts WHERE field = $1;", ["systems." + req.body.field], function (qerr, result) {
 							if (qerr) {
 								console.error(qerr);
 								res.json({error: `Database error - ${qerr}!`, code: 1410});
@@ -541,24 +597,8 @@ server.post("/query", function (req, res) {
 										other.value += result[i].v;
 									}
 								}
-								data.push(other);
-								res.json({ code: 200, data: data });
-							} else {
-								res.json({ code: 200, data: [] });
-							}
-						});
-						break;
-					case "date":
-						database.query("SELECT * FROM counts WHERE field = $1;", ["systems.date"], function (qerr, result) {
-							if (qerr) {
-								console.error(qerr);
-								res.json({error: `Database error - ${qerr}!`, code: 1410});
-								return;
-							}
-							if (result && result.length > 0) {
-								let data = [];
-								for (let i in result) {
-									data.push({ name: result[i].name, value: result[i].v });
+								if (other.value != 0) {
+									data.push(other);
 								}
 								res.json({ code: 200, data: data });
 							} else {
@@ -582,9 +622,9 @@ server.post("/query", function (req, res) {
 							}
 							if (result && result.length > 0) {
 								let data = [];
-								data.push(["Metrics", "Score"]);
+								data.push(["Name", "Metrics", "Score"]);
 								for (let i in result) {
-									data.push([result[i].metrics, result[i].base]);
+									data.push([result[i].name, result[i].metrics, result[i].base]);
 								}
 								res.json({ code: 200, data: data });
 							} else {
@@ -593,7 +633,8 @@ server.post("/query", function (req, res) {
 						});
 						break;
 					case "max_mhz":
-						database.query("SELECT name, max_mhz FROM systems;", [], function (qerr, result) {
+					case "nominal":
+						database.query(`SELECT name, ${req.body.field} FROM systems;`, [], function (qerr, result) {
 							if (qerr) {
 								console.error(qerr);
 								res.json({error: `Database error - ${qerr}!`, code: 1410});
@@ -601,9 +642,9 @@ server.post("/query", function (req, res) {
 							}
 							if (result && result.length > 0) {
 								let data = [];
-								data.push(["Name", "Max_MHz"]);
+								data.push(["Name", "Metrics", "Score"]);
 								for (let i in result) {
-									data.push([result[i].name, result[i].max_mhz]);
+									data.push([result[i].name, req.body.field, result[i][req.body.field]]);
 								}
 								res.json({ code: 200, data: data });
 							} else {
@@ -616,6 +657,82 @@ server.post("/query", function (req, res) {
 						break;
 				}
 				break;
+			case "cloud":
+				let fields = "";
+				for (let f of req.body["fields[]"]) {
+					switch (f) {
+						case "name":
+						case "sponsor":
+						case "tester":
+						case "cpu_name":
+						case "os":
+							if (fields == "") {
+								fields += f;
+							} else {
+								fields += ", " + f;
+							}
+							break;
+						case "fields":
+							break;
+						default:
+							res.json({error: `No field named "${f}"!`, code: 1402});
+							return;
+					}
+				}
+				if (fields == "") {
+					res.json({error: `Empty fields!`, code: 1403});
+					return;
+				}
+				database.query(`SELECT ${fields} FROM systems;`, [], function (qerr, result) {
+					if (qerr) {
+						console.error(qerr);
+						res.json({error: `Database error - ${qerr}!`, code: 1410});
+						return;
+					}
+					if (result && result.length > 0) {
+						let data = [];
+						let tfs = {};
+						let idfs = {};
+						for (let i in result) {
+							tfs[i] = {};
+							let temp = "";
+							for (let f of req.body["fields[]"]) {
+								switch (f) {
+									case "name":
+									case "sponsor":
+									case "tester":
+									case "cpu_name":
+									case "os":
+										temp += result[i][f] + '\n';
+										break;
+									case "fields":
+										break;
+								}
+							}
+							temp = temp.split(/[ \r\n\t,\.\(\)]+/g);
+							for (let wd of temp) {
+								tfs[i][wd] = (tfs[i][wd] || 0) + 1;
+							}
+							for (let wd in tfs[i]) {
+								tfs[i][wd] /= temp.length;
+								idfs[wd] = (idfs[wd] || 0) + 1;
+							}
+						}
+						for (let wd in idfs) {
+							idfs[wd] = Math.log10(result.length / idfs[wd]);
+							let sum_tf = 0;
+							for (let i in result) {
+								sum_tf += tfs[i][wd] || 0;
+							}
+							data.push({ name: wd, value: sum_tf * idfs[wd] });
+						}
+						
+						res.json({ code: 200, data: data });
+					} else {
+						res.json({ code: 200, data: [] });
+					}
+				});
+				break;
 			default:
 				res.json({error: `No task named "${req.body.task}"!`, code: 1401});
 				break;
@@ -624,7 +741,8 @@ server.post("/query", function (req, res) {
 		res.json({error: `Permission level not reached!`, code: 1400});
 	});
 });
-server.post("/reload", function (req, res) {
+
+server.post("/reload", queryLimiter, function (req, res) {
 	let uid = req.cookies.id;
 	let token = req.cookies.token;
 
@@ -633,50 +751,22 @@ server.post("/reload", function (req, res) {
 			case "count":
 				switch (req.body.field) {
 					case "sponsor":
-						database.query("SELECT sponsor, COUNT(*) AS cnt FROM systems GROUP BY sponsor;", [], function (qerr, result) {
-							if (qerr) {
-								console.error(qerr);
-								res.json({error: `Database error when selecting - ${qerr}!`, code: 1410});
-								return;
-							}
-							if (result && result.length > 0) {
-								database.query("DELETE FROM counts WHERE field = $1;", ["systems.sponsor"], function (qerr1, result1) {
-									if (qerr1) {
-										console.error(qerr1);
-										res.json({error: `Database error when deleting - ${qerr1}!`, code: 1410});
-										return;
-									}
-									let i = 0;
-									let to_insert = function (ind) {
-										if (ind >= result.length) {
-											res.json({ code: 200 });
-											return;
-										}
-										database.query("INSERT INTO counts (field, name, v) VALUES($1, $2, $3);", ["systems.sponsor", result[ind].sponsor, result[ind].cnt], function(qerr2, result2) {
-											if (qerr2) {
-												console.error(qerr2);
-												res.json({error: `Database error when inserting - ${qerr2}!`, code: 1410});
-												return;
-											}
-											to_insert(ind + 1);
-										});
-									}
-									to_insert(i);
-								});
-							} else {
-								res.json({ code: 1501, error: "Broken Table!" });
-							}
-						});
-						break;
+					case "tester":
 					case "date":
-						database.query("SELECT date, COUNT(*) AS cnt FROM systems GROUP BY date;", [], function (qerr, result) {
+					case "filesystem":
+					case "compiler":
+					case "parallel":
+					case "base_pointer":
+					case "peak_pointer":
+					case "state":
+						database.query(`SELECT ${req.body.field}, COUNT(*) AS cnt FROM systems GROUP BY ${req.body.field};`, [], function (qerr, result) {
 							if (qerr) {
 								console.error(qerr);
 								res.json({error: `Database error when selecting - ${qerr}!`, code: 1410});
 								return;
 							}
 							if (result && result.length > 0) {
-								database.query("DELETE FROM counts WHERE field = $1;", ["systems.date"], function (qerr1, result1) {
+								database.query("DELETE FROM counts WHERE field = $1;", ["systems." + req.body.field], function (qerr1, result1) {
 									if (qerr1) {
 										console.error(qerr1);
 										res.json({error: `Database error when deleting - ${qerr1}!`, code: 1410});
@@ -688,7 +778,7 @@ server.post("/reload", function (req, res) {
 											res.json({ code: 200 });
 											return;
 										}
-										database.query("INSERT INTO counts (field, name, v) VALUES($1, $2, $3);", ["systems.date", result[ind].date, result[ind].cnt], function(qerr2, result2) {
+										database.query("INSERT INTO counts (field, name, v) VALUES($1, $2, $3);", ["systems." + req.body.field, result[ind][req.body.field], result[ind].cnt], function(qerr2, result2) {
 											if (qerr2) {
 												console.error(qerr2);
 												res.json({error: `Database error when inserting - ${qerr2}!`, code: 1410});
@@ -738,13 +828,238 @@ server.post("/reload", function (req, res) {
 	});
 });
 
+server.post('/recommendation', function(req, res) {
+	let uid = req.cookies.id;
+	let token = req.cookies.token;
+	checkPermissionOrElse(uid, token, 0, () => {
+		database.query('SELECT systems.* FROM recommendations, systems WHERE systems.id = recommendations.sys_id AND recommendations.user_id = $1;', [uid], function(qerr, results) {
+			if (qerr) {
+				console.error(qerr);
+				res.json({error: `Database error when selecting - ${qerr}!`, code: 1410});
+				return;
+			}
+			if (results && results.length > 0) {
+				let data = [];
+				for (let i = 0; i < results.length; ++i) {
+					data.push({id: results[i].id, name: results[i].name, sponsor: results[i].sponsor, tester: results[i].tester, date: results[i].date});
+				}
+				res.json({ code: 200, data: data });
+			} else {
+				res.json({ code: 1501, error: "Broken Table!" });
+			}
+		});
+	}, () => {
+		res.json({error: `Permission level not reached!`, code: 1400});
+	});
+});
 
+server.post('/like', queryLimiter, function (req, res) {
+	let uid = req.cookies.id;
+	let token = req.cookies.token;
+	let sid = req.body.sid;
+	let time = (new Date()).getTime();
+	if (!(sid instanceof Number)) {
+		try {
+			sid = parseInt(sid);
+		} catch (e) {
+			res.json({error: `Invalid system id!`, code: 1402});
+			return;
+		}
+	}
+
+	checkPermissionOrElse(uid, token, 0, () => {
+		database.query('SELECT * FROM user_actions WHERE user_id = $1 AND target = $2;', [uid, sid], function(qerr, result) {
+			if (qerr) {
+				console.error(qerr);
+				res.json({error: `Database error when selecting - ${qerr}!`, code: 1410});
+				return;
+			}
+			if (result && result.length > 0) {
+				res.json({error: `Already liked/disliked this system.`, code: 1404});
+				return;
+			}
+			database.query('INSERT INTO user_actions (user_id, action, target, time) VALUES ($1, $2, $3, to_timestamp($4));', [uid, "like", sid, time / 1000], function(qerr1, result1) {
+				if (qerr1) {
+					console.error(qerr1);
+					res.json({error: `Database error when inserting - ${qerr1}!`, code: 1410});
+					return;
+				}
+				res.json({ code: 200 });
+			});
+		});
+	}, () => {
+		res.json({error: `Permission level not reached!`, code: 1400});
+	});
+});
+server.post('/dislike', queryLimiter, function (req, res) {
+	let uid = req.cookies.id;
+	let token = req.cookies.token;
+	let sid = req.body.sid;
+	let time = (new Date()).getTime();
+	if (!(sid instanceof Number)) {
+		try {
+			sid = parseInt(sid);
+		} catch (e) {
+			res.json({error: `Invalid system id!`, code: 1402});
+			return;
+		}
+	}
+
+	checkPermissionOrElse(uid, token, 0, () => {
+		database.query('SELECT * FROM user_actions WHERE user_id = $1 AND target = $2;', [uid, sid], function(qerr, result) {
+			if (qerr) {
+				console.error(qerr);
+				res.json({error: `Database error when selecting - ${qerr}!`, code: 1410});
+				return;
+			}
+			if (result && result.length > 0) {
+				res.json({error: `Already liked/disliked this system.`, code: 1404});
+				return;
+			}
+			database.query('INSERT INTO user_actions (user_id, action, target, time) VALUES ($1, $2, $3, to_timestamp($4));', [uid, "dislike", sid, time / 1000], function(qerr1, result1) {
+				if (qerr1) {
+					console.error(qerr1);
+					res.json({error: `Database error when inserting - ${qerr1}!`, code: 1410});
+					return;
+				}
+				res.json({ code: 200 });
+			});
+		});
+	}, () => {
+		res.json({error: `Permission level not reached!`, code: 1400});
+	});
+});
+
+var latent_dim = 3;
+var epoch = 128;
+var max_recom = 16;
+var learning_rate = 0.05;
+var reg_rate = 0.0005;
+var user_id_index = {};
+var system_id_index = {};
+
+function computeMatrix() {
+	let user_matrix = [];
+	let sys_matrix = [];
+	let target_matrix = [];
+	user_id_index = {};
+	system_id_index = {};
+
+	database.query('SELECT * FROM users;', [], function (qerr, users) {
+		if(qerr) {
+			console.error(qerr);
+			return;
+		}
+		if (!users || users.length == 0) {
+			return;
+		}
+		database.query('SELECT * FROM systems;', [], function (qerr1, systems) {
+			if(qerr1) {
+				console.error(qerr1);
+				return;
+			}
+			if (!systems || systems.length == 0) {
+				return;
+			}
+
+			let user_cnt = users.length;
+			let sys_cnt = systems.length;
+			for (let i = 0; i < user_cnt; ++i) {
+				let temp_user_vec = [];
+				for (let j = 0; j < latent_dim; ++j) {
+					temp_user_vec.push((Math.random() * 2 - 1) / latent_dim);
+				}
+				user_id_index[users[i].id] = i;
+				user_matrix.push(temp_user_vec)
+			}
+			for (let i = 0; i < sys_cnt; ++i) {
+				let temp_sys_vec = [];
+				for (let j = 0; j < latent_dim; ++j) {
+					temp_sys_vec.push((Math.random() * 2 - 1) / latent_dim);
+				}
+				system_id_index[systems[i].id] = i;
+				sys_matrix.push(temp_sys_vec)
+			}
+			for (let i = 0; i < user_cnt; ++i) {
+				let temp_target_vec = [];
+				for (let j = 0; j < sys_cnt; ++j) {
+					temp_target_vec.push(0);
+				}
+				target_matrix.push(temp_target_vec);
+			}
+			database.query("SELECT * FROM user_actions WHERE action = 'like' OR action = 'dislike';", [], function(qerr2, result) {
+				if (qerr2) {
+					console.error(qerr2);
+					return;
+				}
+				if (!result || result.length == 0) {
+					return;
+				}
+				for (let i = 0; i < result.length; ++i) {
+					target_matrix[user_id_index[result[i].user_id]][system_id_index[result[i].target]] = result[i].action == 'like' ? 1 : -1;
+				}
+
+				for (let e = 0; e <= epoch; ++e) {
+					let predict = numeric.dot(user_matrix, numeric.transpose(sys_matrix));
+					let err = numeric["*"](numeric["-"](target_matrix, predict), numeric["*"](target_matrix, target_matrix));
+					let loss = 0.5 * numeric.sum(numeric["*"](err, err));
+					if((e & 15) == 0) {
+						console.log(`Epoch = ${e}, loss = ${loss}.`);
+					}
+					user_matrix = numeric["+"](user_matrix, numeric["*"](numeric["+"](numeric.dot(err, sys_matrix), numeric["*"](user_matrix, reg_rate)), learning_rate));
+					sys_matrix = numeric["+"](sys_matrix, numeric["*"](numeric["+"](numeric.dot(numeric.transpose(err), user_matrix), numeric["*"](sys_matrix, reg_rate)), learning_rate));
+				}
+				let predict = numeric.dot(user_matrix, numeric.transpose(sys_matrix));
+				let thresholds = [];
+				for (let i = 0; i < user_cnt; ++i) {
+					let temps = [];
+					for (let j = 0; j < sys_cnt; ++j) {
+						if(target_matrix[i][j] == 0) {
+							temps.push(predict[i][j]);
+						}
+					}
+					temps.sort((a, b) => b - a);
+					let thres_index = Math.min(max_recom, temps.length - 1);
+					thresholds.push(temps[thres_index]);
+				}
+				database.query("DELETE FROM recommendations;", [], function (qerr3, result1) {
+					if (qerr3) {
+						console.error(qerr3);
+						return;
+					}
+					for (let i = 0; i < user_cnt; ++i) {
+						for (let j = 0; j < sys_cnt; ++j) {
+							if(target_matrix[i][j] == 0 && thresholds[i] < predict[i][j]) {
+								database.query("INSERT INTO recommendations (user_id, sys_id, score) VALUES ($1, $2, $3);", [users[i].id, systems[j].id, predict[i][j]], function(qerr4, result2) {
+									if (qerr4) {
+										console.error(qerr4);
+									}
+								});
+							}
+						}
+					}
+				});
+			});
+		});
+	});
+}
+
+setTimeout(computeMatrix, 1000);
+
+var resetMatrix = false;
 setInterval(function () {
-	let now_time = (new Date()).getTime();
+	let now_datetime = new Date();
+	let now_time = now_datetime.getTime();
 	for (let i in active_users) {
 		if (active_users[i].time + maxAge < now_time) {
 			delete active_users[i];
 		}
+	}
+	if (!resetMatrix && now_datetime.getHours() == 0 && now_datetime.getMinutes() == 0) {
+		resetMatrix = true;
+		computeMatrix();
+	} else if(now_datetime.getHours() != 0) {
+		resetMatrix = false;
 	}
 }, 30 * 1000);
 

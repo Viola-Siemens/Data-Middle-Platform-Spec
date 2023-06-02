@@ -41,11 +41,18 @@
     <Content Include="html\index.html" />
     <Content Include="html\login.html" />
     <Content Include="html\main.html" />
+    <Content Include="html\report.html">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="html\signup.html" />
     <Content Include="public\css\style.css">
       <SubType>Code</SubType>
     </Content>
     <Content Include="public\js\echarts.min.js" />
+    <Content Include="public\js\ecSimpleTransform.min.js" />
+    <Content Include="public\js\ecStat.min.js" />
+    <Content Include="public\js\jquery-3.7.0.min.js" />
+    <Content Include="public\js\report-charts.js" />
     <Content Include="server.js" />
     <Content Include="package.json" />
     <Content Include="README.md" />

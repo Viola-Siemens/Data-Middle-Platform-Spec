@@ -2,11 +2,12 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="utf-8" />
-    <title>Spec数据明细</title>
-    <link rel="stylesheet" href="css/style.css" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-    <script type="text/javascript">
+	<meta charset="utf-8" />
+	<title>Spec数据明细</title>
+	<link rel="stylesheet" href="css/style.css" />
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+	<script type="text/javascript" src="js/jquery-3.7.0.min.js"></script>
+	<script type="text/javascript">
 		function showSearchBox() {
 			document.getElementById("float-search-box").hidden = false;
 		}
@@ -14,76 +15,103 @@
 		function hideSearchBox() {
 			document.getElementById("float-search-box").hidden = true;
 		}
-    </script>
+
+		function showRecommendationOnly() {
+			document.getElementById("table-body").hidden = true;
+			document.getElementById("recom-btn").onclick = "hideRecommendation()";
+			document.getElementById("recom-btn").innerText = "查看全部";
+			document.getElementById("recommendation-table-body").hidden = false;
+			$.post("/recommendation", {}, function (data) {
+				if (data.error || data.code != 200) {
+					document.getElementById("recommendation-table-body").innerHTML = '<h2 class="center"> 权限不足 </h2>';
+					return;
+				}
+				let rows = "";
+				for (let i in data.data) {
+					rows += `<tr><td><a href="/detail?id=${data.data[i].id}">${data.data[i].name}</a></td><td>${data.data[i].sponsor}</td><td>${data.data[i].tester}</td><td>${data.data[i].date}</td></tr>`
+				}
+				document.getElementById("recommendation-table-body").innerHTML = rows;
+			});
+		}
+
+		function hideRecommendation() {
+			document.getElementById("table-body").hidden = false;
+			document.getElementById("recommendation-table-body").hidden = true;
+			document.getElementById("recom-btn").onclick = "showRecommendationOnly()";
+			document.getElementById("recom-btn").innerText = "推荐结果";
+		}
+	</script>
 </head>
 <body>
-    <div id="flexslider-nav" class="fullpage-wrap small">
-        <div class="text center" style="background-image: url(imgs/slider.jpg);">
-            <h1 class="heading center white margin-bottom-small flex-animation">Spec 数据中台</h1>
-            <p class="heading white center margin-bottom flex-animation">全面的系统数据采集，权威的数据分析！</p>
-            <div class="padding-onlytop-md flex-animation">
-                <a href="/" class="btn-alt small shadow">首页</a>
-            </div>
-        </div>
-        <div class="gradient dark"></div>
-        <div id="godown">
-            <a href="#home-wrap" class="btn-down">
-                <i class="material-icons">keyboard_arrow_down</i>
-            </a>
-        </div>
-    </div>
-    <div id="form-div">
-        <h3 id="welcome">
-            欢迎<span id="welcome-permission"></span><span id="welcome-username">游客</span>！
-        </h3>
-    </div>
-    <div id="table-div" style="width: 100%">
-        <table style="margin-left: auto; margin-right: auto; width: 75%">
-            <caption><h2 class="dense center" id="caption">Spec数据表</h2></caption>
-            <caption><button onclick="showSearchBox()">高级搜索</button></caption>
-            <caption id="jump-btns">
-            </caption>
-            <thead>
-                <tr>
-                    <td>系统名称</td>
-                    <td>贡献者</td>
-                    <td>测试者</td>
-                    <td>上传日期</td>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-            </tbody>
-        </table>
-    </div>
-    <div id="float-search-box" class="floating" hidden="hidden">
-        <form action="/content" method="GET">
-            <p>系统名称：　　　<input name="name" type="search" /></p>
-            <p>贡献者：　　　　<input name="sponsor" type="search" /></p>
-            <p>测试者：　　　　<input name="tester" type="search" /></p>
-            <p>日期：　　　　　<input name="date" type="search" /></p>
-            <p>中央处理器名称：<input name="cpu_name" type="search" /></p>
-            <p>最大主频：　　　<select name="cond_max_mhz">
-                    <option value="eq" selected="selected">等于</option>
-                    <option value="gt">大于</option>
-                    <option value="lt">小于</option>
-                    <option value="ge">大于等于</option>
-                    <option value="le">小于等于</option>
-                </select>
-                <input name="max_mhz" type="number" />
-            </p>
-            <p>默认功率：　　　<select name="cond_nominal">
-                    <option value="eq" selected="selected">等于</option>
-                    <option value="gt">大于</option>
-                    <option value="lt">小于</option>
-                    <option value="ge">大于等于</option>
-                    <option value="le">小于等于</option>
-                </select>
-                <input name="nominal" type="number" />
-            </p>
-            <p>操作系统：　　　<input name="os" type="search" /></p>
-            <p>文件系统：　　　<input name="filesystem" type="search" /></p>
-            <p style="margin-bottom: auto"><input type="submit" value="搜索" />　　　　　　　　<button onclick="hideSearchBox()" type="button">关闭</button></p>
-        </form>
-    </div>
+	<div id="flexslider-nav" class="fullpage-wrap small">
+		<div class="text center" style="background-image: url(imgs/slider.jpg);">
+			<h1 class="heading center white margin-bottom-small flex-animation">Spec 数据中台</h1>
+			<p class="heading white center margin-bottom flex-animation">全面的系统数据采集，权威的数据分析！</p>
+			<div class="padding-onlytop-md flex-animation">
+				<a href="/" class="btn-alt small shadow">首页</a>
+			</div>
+		</div>
+		<div class="gradient dark"></div>
+		<div id="godown">
+			<a href="#home-wrap" class="btn-down">
+				<i class="material-icons">keyboard_arrow_down</i>
+			</a>
+		</div>
+	</div>
+	<div id="form-div">
+		<h3 id="welcome">
+			欢迎<span id="welcome-permission"></span><span id="welcome-username">游客</span>！
+		</h3>
+	</div>
+	<div id="table-div" style="width: 100%">
+		<table style="margin-left: auto; margin-right: auto; width: 75%">
+			<caption><h2 class="dense center" id="caption">Spec数据表</h2></caption>
+			<caption><button onclick="showSearchBox()">高级搜索</button><button id="recom-btn" onclick="showRecommendationOnly()">推荐结果</button></caption>
+			<caption id="jump-btns">
+			</caption>
+			<thead>
+				<tr>
+					<td>系统名称</td>
+					<td>贡献者</td>
+					<td>测试者</td>
+					<td>上传日期</td>
+				</tr>
+			</thead>
+			<tbody id="table-body">
+			</tbody>
+			<tbody id="recommendation-table-body" hidden>
+			</tbody>
+		</table>
+	</div>
+	<div id="float-search-box" class="floating" hidden="hidden">
+		<form action="/content" method="GET">
+			<p>系统名称：　　　<input name="name" type="search" /></p>
+			<p>贡献者：　　　　<input name="sponsor" type="search" /></p>
+			<p>测试者：　　　　<input name="tester" type="search" /></p>
+			<p>日期：　　　　　<input name="date" type="search" /></p>
+			<p>中央处理器名称：<input name="cpu_name" type="search" /></p>
+			<p>最大主频：　　　<select name="cond_max_mhz">
+					<option value="eq" selected="selected">等于</option>
+					<option value="gt">大于</option>
+					<option value="lt">小于</option>
+					<option value="ge">大于等于</option>
+					<option value="le">小于等于</option>
+				</select>
+				<input name="max_mhz" type="number" />
+			</p>
+			<p>默认功率：　　　<select name="cond_nominal">
+					<option value="eq" selected="selected">等于</option>
+					<option value="gt">大于</option>
+					<option value="lt">小于</option>
+					<option value="ge">大于等于</option>
+					<option value="le">小于等于</option>
+				</select>
+				<input name="nominal" type="number" />
+			</p>
+			<p>操作系统：　　　<input name="os" type="search" /></p>
+			<p>文件系统：　　　<input name="filesystem" type="search" /></p>
+			<p style="margin-bottom: auto"><input type="submit" value="搜索" />　　　　　　　　<button onclick="hideSearchBox()" type="button">关闭</button></p>
+		</form>
+	</div>
 </body>
 </html>
