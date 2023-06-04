@@ -552,7 +552,7 @@ server.get("/report", function(req, res) {
 
 const queryLimiter = rateLimit({
 	windowMs: 1000,
-	max: 1,
+	max: 5,
 	message: "操作频繁，请稍后重试！"
 });
 
